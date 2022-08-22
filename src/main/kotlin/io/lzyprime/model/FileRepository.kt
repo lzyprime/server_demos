@@ -8,23 +8,22 @@ import io.lzyprime.utils.md5
 import org.jetbrains.exposed.sql.transactions.transaction
 
 interface FileRepository {
-    fun putFile(fileType: FileType, fileByte: ByteArray): Result<Int>
+    fun putFile(fileType: FileType, fileByte: ByteArray): Result<String>
     fun getFileById(fileType: FileType, fid: Int): Result<ByteArray>
 
     companion object : FileRepository {
 
-        override fun putFile(fileType: FileType, fileByte: ByteArray): Result<Int> =
+        override fun putFile(fileType: FileType, fileByte: ByteArray): Result<String> =
             Failed.FilePutFailed.onNullOrFailed {
                 getFileFilmEntity(fileType)?.let { film ->
                     val file = transaction(DB.fileDB) {
                         val filename = md5(fileByte)
-                        film.findByName(filename) ?:
-                        film.new {
+                        film.findByName(filename) ?: film.new {
                             name = filename
                             bytes = fileByte
                         }
                     }
-                    file.fid
+                    fileType.fileUrl(file.fid)
                 }
             }
 

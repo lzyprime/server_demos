@@ -4,5 +4,8 @@ enum class Gender {
     Unknown,
     Male,
     Female,
-    Secret,
+    Secret;
+    companion object {
+        operator fun invoke(ordinal: Int): Gender = values().getOrNull(ordinal) ?: Unknown
+    }
 }

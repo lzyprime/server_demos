@@ -6,12 +6,11 @@ import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserFilms : IntIdTable() {
     val name = varchar("name", 20).uniqueIndex()
     val checkCode = varchar("check_code", 50).default("")
-    val avatar = integer("avatar").default(-1)
+    val avatar = varchar("avatar", 500).default("")
     val nickname = varchar("nickname", 50).default("")
     val gender = enumeration<Gender>("gender").default(Gender.Unknown)
     val createTime = long("create_time").clientDefault { System.currentTimeMillis() }
@@ -27,7 +26,7 @@ class UserFilm(id: EntityID<Int>) : IntEntity(id) {
     var avatar by UserFilms.avatar
     var nickname by UserFilms.nickname
     var gender by UserFilms.gender
-    val createTime by UserFilms.createTime
+    private val createTime by UserFilms.createTime
 
     private var checkCode by UserFilms.checkCode
 

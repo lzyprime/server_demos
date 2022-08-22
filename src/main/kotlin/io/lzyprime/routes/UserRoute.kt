@@ -6,10 +6,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.lzyprime.model.AuthRepository
-import io.lzyprime.model.FileRepository
 import io.lzyprime.model.UserRepository
 import io.lzyprime.model.data.Failed
-import io.lzyprime.model.data.FileType
 import io.lzyprime.model.data.TokenPrincipal
 import io.lzyprime.model.db.Gender
 import io.lzyprime.plugins.Security
@@ -19,7 +17,6 @@ fun Routing.userRoute() = route("/user") {
     authenticate(Security.authSessionName) {
         checkLogin()
         updateUserInfo()
-        updateAvatar()
     }
 }
 
@@ -41,32 +38,27 @@ private fun Route.login() = post<LoginReq>("/login") { req ->
 }
 
 private fun Route.checkLogin() = get {
-    call.respondResult(UserRepository.getUserInfo(selfUid))
+    UserRepository.getUserInfo(selfUid).onSuccess {
+        call.respond(it)
+    }.onFailure {
+        call.sessions.clear(Security.tokenName)
+        call.respondFailed(Failed.TokenExpired)
+    }
 }
 
 @kotlinx.serialization.Serializable
 data class UpdateUserInfoReq(
-    val nickname: String,
-    val gender: Gender,
+    val nickname: String?,
+    val gender: Int?,
+    val avatar: String?,
 )
 
 private fun Route.updateUserInfo() = put<UpdateUserInfoReq> { req ->
     call.respondResult(
         UserRepository.updateUserInfo(selfUid) {
-            it.nickname = req.nickname
-            it.gender = req.gender
+            req.nickname?.let { v -> it.nickname = v }
+            req.gender?.let { v -> it.gender = Gender(v) }
+            req.avatar?.let { v -> it.avatar = v }
         }
     )
-}
-
-private fun Route.updateAvatar() = put<ByteArray>("/avatar") { fileByteArray ->
-    FileRepository.putFile(FileType.Picture, fileByteArray).onSuccess { fid ->
-        call.respondResult(
-            UserRepository.updateUserInfo(selfUid) {
-                it.avatar = fid
-            }
-        )
-    }.onFailure { t ->
-        call.respondFailed(t)
-    }
 }
